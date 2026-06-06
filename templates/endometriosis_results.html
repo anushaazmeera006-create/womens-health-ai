@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-panel">
+  <h2>Endometriosis Risk Results</h2>
+  <p>Based on your symptoms and risk factors, here's your personalized assessment</p>
+</section>
+
+<section class="risk-results">
+  <div class="risk-summary">
+    <div class="risk-metric">
+      <span class="risk-label">Risk Level</span>
+      <div class="risk-value {{ results.risk_level|lower }}">{{ results.risk_level }}</div>
+    </div>
+    <div class="risk-percentage">
+      <span class="risk-label">Risk Score</span>
+      <div class="risk-number">{{ results.risk_score }}%</div>
+    </div>
+  </div>
+
+  <div class="risk-factors">
+    <h3>Key Risk Factors Identified</h3>
+    {% for factor in results.risk_factors %}
+    <div class="risk-factor">
+      <span class="factor-name">{{ factor.name }}</span>
+      <span class="factor-value {{ factor.level|lower }}">{{ factor.level }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="assessment-summary">
+    <h3>Clinical Assessment Summary</h3>
+    {% for finding in results.findings %}
+    <div class="finding">{{ finding }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="recommendations">
+    <h3>Recommendations</h3>
+    {% for rec in results.recommendations %}
+    <div class="recommendation">{{ rec }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="action-buttons">
+    <a href="/risk" class="secondary-btn">Back to Risk Assessment</a>
+    <form method="post" style="display: inline;">
+      <button type="submit" name="start_new_assessment" class="primary-btn">Start New Assessment</button>
+    </form>
+  </div>
+</section>
+
+<style>
+.risk-results {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.risk-summary {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.risk-metric, .risk-percentage {
+  text-align: center;
+}
+
+.risk-label {
+  display: block;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.risk-value {
+  font-size: 2em;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid;
+}
+
+.risk-value.low {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border-color: var(--ok);
+}
+
+.risk-value.medium {
+  background: rgba(251, 191, 36, 0.2);
+  color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.risk-value.high {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: var(--bad);
+}
+
+.risk-number {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.risk-factors {
+  margin-bottom: 30px;
+}
+
+.risk-factor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  margin-bottom: 10px;
+  background: var(--bg-glass);
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  backdrop-filter: blur(5px);
+}
+
+.factor-name {
+  font-weight: 500;
+  color: var(--text-main);
+  flex: 1;
+}
+
+.factor-value {
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  min-width: 60px;
+  text-align: center;
+}
+
+.factor-value.low {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.factor-value.medium {
+  background: rgba(251, 191, 36, 0.2);
+  color: #f59e0b;
+}
+
+.factor-value.high {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.recommendations {
+  margin-bottom: 30px;
+}
+
+.recommendation {
+  padding: 15px 20px;
+  margin-bottom: 10px;
+  background: rgba(255, 79, 154, 0.15);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  line-height: 1.5;
+  backdrop-filter: blur(5px);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.assessment-summary {
+  margin-bottom: 30px;
+}
+
+.finding {
+  padding: 12px 20px;
+  margin-bottom: 8px;
+  background: rgba(255, 182, 193, 0.15);
+  border-radius: 10px;
+  border-left: 4px solid var(--accent-2);
+  backdrop-filter: blur(5px);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.secondary-btn, .primary-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #2b0018;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 79, 154, 0.3);
+}
+
+.secondary-btn {
+  background: rgba(255, 182, 193, 0.3);
+  color: var(--text-main);
+  border: 1px solid var(--line);
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 182, 193, 0.5);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .risk-summary {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>
+{% endblock %}
