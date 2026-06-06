@@ -12,28 +12,63 @@ class DatabaseManager:
         self.connect()
     
     def connect(self):
-        """Connect to MySQL database"""
+        """Connect to database (MySQL/PostgreSQL for Vercel, SQLite for local dev)"""
         try:
-            # Use environment variables for deployment, fallback to local for development
-            host = os.getenv('DATABASE_HOST', 'localhost')
-            user = os.getenv('DATABASE_USER', 'root')
-            password = os.getenv('DATABASE_PASSWORD', 'Anusha@2006')
-            database = os.getenv('DATABASE_NAME', 'womens_health_ai')
-            port = os.getenv('DATABASE_PORT', '3306')
-            
-            self.connection = mysql.connector.connect(
-                host=host,
-                user=user,
-                password=password,
-                database=database,
-                port=port
-            )
-            if self.connection.is_connected():
-                print(f"Connected to MySQL database: host={host}, user={user}, database={database}, port={port}")
+            # Check if using Vercel PostgreSQL
+            if os.getenv('POSTGRES_URL') or os.getenv('DATABASE_URL'):
+                self._connect_postgresql()
+            # Use MySQL with environment variables
+            elif os.getenv('DATABASE_HOST'):
+                self._connect_mysql()
+            # Local development with SQLite
+            else:
+                self._create_sqlite_fallback()
         except Error as e:
-            print(f"Error connecting to MySQL: {e}")
-            # For development, create a local SQLite fallback
-            self._create_sqlite_fallback()
+            print(f"Error connecting to database: {e}")
+            # For local development, create SQLite fallback
+            if not os.getenv('VERCEL'):
+                self._create_sqlite_fallback()
+            else:
+                raise Exception("Database connection failed on Vercel. Please set DATABASE_URL or POSTGRES_URL environment variables.")
+    
+    def _connect_mysql(self):
+        """Connect to MySQL database"""
+        host = os.getenv('DATABASE_HOST', 'localhost')
+        user = os.getenv('DATABASE_USER', 'root')
+        password = os.getenv('DATABASE_PASSWORD', 'Anusha@2006')
+        database = os.getenv('DATABASE_NAME', 'womens_health_ai')
+        port = os.getenv('DATABASE_PORT', '3306')
+        
+        self.connection = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=port
+        )
+        if self.connection.is_connected():
+            print(f"Connected to MySQL database: host={host}, user={user}, database={database}, port={port}")
+    
+    def _connect_postgresql(self):
+        """Connect to PostgreSQL database (for Vercel)"""
+        try:
+            import psycopg2
+            from psycopg2 import sql
+        except ImportError:
+            print("psycopg2 not installed. Installing...")
+            import subprocess
+            subprocess.check_call(['pip', 'install', 'psycopg2-binary'])
+            import psycopg2
+            from psycopg2 import sql
+        
+        # Use DATABASE_URL or POSTGRES_URL
+        db_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL')
+        if db_url:
+            self.connection = psycopg2.connect(db_url)
+            self.use_postgresql = True
+            print("Connected to PostgreSQL database")
+        else:
+            raise Exception("No PostgreSQL URL provided")
     
     def _create_sqlite_fallback(self):
         """Fallback to SQLite for development"""
@@ -129,6 +164,10 @@ class DatabaseManager:
             connection = sqlite3.connect(self.sqlite_path)
             connection.row_factory = sqlite3.Row
             return connection
+        elif hasattr(self, 'use_postgresql') and self.use_postgresql:
+            import psycopg2
+            db_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL')
+            return psycopg2.connect(db_url)
         else:
             # Create fresh MySQL connection for each operation
             host = os.getenv('DATABASE_HOST', 'localhost')
@@ -157,15 +196,21 @@ class DatabaseManager:
             password_hash = self.hash_password(password)
             
             # Check if user already exists
-            check_query = '''
-                SELECT username, email FROM users 
-                WHERE username = ? OR email = ?
-            ''' if hasattr(connection, 'row_factory') else '''
-                SELECT username, email FROM users 
-                WHERE username = %s OR email = %s
-            '''
+            if hasattr(connection, 'row_factory'):
+                # SQLite
+                check_query = '''
+                    SELECT username, email FROM users 
+                    WHERE username = ? OR email = ?
+                '''
+                cursor.execute(check_query, (username, email))
+            else:
+                # MySQL or PostgreSQL
+                check_query = '''
+                    SELECT username, email FROM users 
+                    WHERE username = %s OR email = %s
+                '''
+                cursor.execute(check_query, (username, email))
             
-            cursor.execute(check_query, (username, email))
             existing_user = cursor.fetchone()
             
             if existing_user:
@@ -183,15 +228,21 @@ class DatabaseManager:
                 return False
             
             # Create new user
-            query = '''
-                INSERT INTO users (username, email, password_hash, full_name, date_of_birth)
-                VALUES (?, ?, ?, ?, ?)
-            ''' if hasattr(connection, 'row_factory') else '''
-                INSERT INTO users (username, email, password_hash, full_name, date_of_birth)
-                VALUES (%s, %s, %s, %s, %s)
-            '''
+            if hasattr(connection, 'row_factory'):
+                # SQLite
+                query = '''
+                    INSERT INTO users (username, email, password_hash, full_name, date_of_birth)
+                    VALUES (?, ?, ?, ?, ?)
+                '''
+                cursor.execute(query, (username, email, password_hash, full_name, date_of_birth))
+            else:
+                # MySQL or PostgreSQL
+                query = '''
+                    INSERT INTO users (username, email, password_hash, full_name, date_of_birth)
+                    VALUES (%s, %s, %s, %s, %s)
+                '''
+                cursor.execute(query, (username, email, password_hash, full_name, date_of_birth))
             
-            cursor.execute(query, (username, email, password_hash, full_name, date_of_birth))
             connection.commit()
             print(f"User '{username}' created successfully")
             return True
