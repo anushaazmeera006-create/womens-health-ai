@@ -67,6 +67,8 @@ class DatabaseManager:
             self.connection = psycopg2.connect(db_url)
             self.use_postgresql = True
             print("Connected to PostgreSQL database")
+            # Auto-create tables if they don't exist
+            self._init_postgresql_tables()
         else:
             raise Exception("No PostgreSQL URL provided")
     
@@ -77,6 +79,85 @@ class DatabaseManager:
         self.sqlite_path = 'womens_health_ai.db'
         print("Using SQLite fallback database")
         self._init_sqlite_tables()
+    
+    def _init_postgresql_tables(self):
+        """Initialize PostgreSQL tables"""
+        import psycopg2
+        cursor = self.connection.cursor()
+        
+        # Users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                email VARCHAR(255) UNIQUE,
+                password_hash TEXT NOT NULL,
+                full_name TEXT,
+                date_of_birth DATE,
+                mobile_number VARCHAR(20) UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Symptom logs table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS symptom_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                selected_date DATE NOT NULL,
+                had_period VARCHAR(10) DEFAULT 'No',
+                cycle_phase VARCHAR(50) DEFAULT 'Follicular',
+                symptoms_selected TEXT,
+                other_symptom TEXT,
+                mood_state TEXT,
+                cramps BOOLEAN DEFAULT FALSE,
+                fatigue BOOLEAN DEFAULT FALSE,
+                nausea BOOLEAN DEFAULT FALSE,
+                mood_swings BOOLEAN DEFAULT FALSE,
+                acne BOOLEAN DEFAULT FALSE,
+                back_pain BOOLEAN DEFAULT FALSE,
+                flow_intensity INTEGER DEFAULT 2,
+                pain_level INTEGER DEFAULT 2,
+                cluster_result TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(user_id, selected_date)
+            )
+        ''')
+        
+        # Period dates table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS period_dates (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                period_date DATE NOT NULL,
+                period_length_days INTEGER DEFAULT 5,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(user_id, period_date)
+            )
+        ''')
+        
+        # Assessment results table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS assessment_results (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                assessment_type VARCHAR(100) NOT NULL,
+                risk_percentage DECIMAL(5,2),
+                risk_level VARCHAR(50),
+                risk_factors TEXT,
+                assessment_summary TEXT,
+                recommendations TEXT,
+                assessment_data TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        
+        self.connection.commit()
+        print("PostgreSQL tables initialized successfully")
     
     def _init_sqlite_tables(self):
         """Initialize SQLite tables"""
