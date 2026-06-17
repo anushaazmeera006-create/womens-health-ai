@@ -89,10 +89,11 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
-                email TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE,
                 password_hash TEXT NOT NULL,
                 full_name TEXT,
                 date_of_birth DATE,
+                mobile_number TEXT UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -500,13 +501,14 @@ class DatabaseManager:
     
     def save_period_date(self, user_id: int, period_date: str, period_length_days: int = 5) -> bool:
         """Save period date for user"""
+        connection = self._get_connection()
         try:
-            cursor = self.connection.cursor()
+            cursor = connection.cursor()
             
             query = '''
                 INSERT OR REPLACE INTO period_dates (user_id, period_date, period_length_days)
                 VALUES (?, ?, ?)
-            ''' if hasattr(self.connection, 'row_factory') else '''
+            ''' if hasattr(connection, 'row_factory') else '''
                 INSERT INTO period_dates (user_id, period_date, period_length_days)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE
@@ -514,22 +516,26 @@ class DatabaseManager:
             '''
             
             cursor.execute(query, (user_id, period_date, period_length_days))
-            self.connection.commit()
+            connection.commit()
             return True
         except Error as e:
             print(f"Error saving period date: {e}")
             return False
+        finally:
+            if hasattr(connection, 'close'):
+                connection.close()
     
     def get_user_period_dates(self, user_id: int) -> List[str]:
         """Get all period dates for a user"""
+        connection = self._get_connection()
         try:
-            cursor = self.connection.cursor()
+            cursor = connection.cursor()
             
             query = '''
                 SELECT period_date FROM period_dates 
                 WHERE user_id = ? 
                 ORDER BY period_date DESC
-            ''' if hasattr(self.connection, 'row_factory') else '''
+            ''' if hasattr(connection, 'row_factory') else '''
                 SELECT period_date FROM period_dates 
                 WHERE user_id = %s 
                 ORDER BY period_date DESC
@@ -542,6 +548,9 @@ class DatabaseManager:
         except Error as e:
             print(f"Error getting period dates: {e}")
             return []
+        finally:
+            if hasattr(connection, 'close'):
+                connection.close()
     
     def delete_symptom_log(self, user_id: int, selected_date: str) -> bool:
         """Delete a specific symptom log from database"""
