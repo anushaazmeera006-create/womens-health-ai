@@ -13,8 +13,19 @@ class DatabaseManager:
     
     def connect(self):
         """Connect to database (MySQL/PostgreSQL for Vercel, SQLite for local dev)"""
+        # On Vercel, require PostgreSQL connection
+        if os.getenv('VERCEL'):
+            if os.getenv('POSTGRES_URL') or os.getenv('DATABASE_URL'):
+                try:
+                    self._connect_postgresql()
+                except Exception as e:
+                    raise Exception(f"Failed to connect to PostgreSQL on Vercel: {e}. Please check DATABASE_URL or POSTGRES_URL environment variables.")
+            else:
+                raise Exception("Vercel deployment requires DATABASE_URL or POSTGRES_URL environment variable. SQLite is not supported on Vercel.")
+        
+        # Local development or other environments
         try:
-            # Check if using Vercel PostgreSQL
+            # Check if using PostgreSQL
             if os.getenv('POSTGRES_URL') or os.getenv('DATABASE_URL'):
                 self._connect_postgresql()
             # Use MySQL with environment variables
