@@ -62,15 +62,8 @@ class DatabaseManager:
     
     def _connect_postgresql(self):
         """Connect to PostgreSQL database (for Vercel)"""
-        try:
-            import psycopg2
-            from psycopg2 import sql
-        except ImportError:
-            print("psycopg2 not installed. Installing...")
-            import subprocess
-            subprocess.check_call(['pip', 'install', 'psycopg2-binary'])
-            import psycopg2
-            from psycopg2 import sql
+        import psycopg2
+        from psycopg2 import sql
         
         # Use DATABASE_URL or POSTGRES_URL
         db_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL')
