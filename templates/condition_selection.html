@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-panel">
+  <h2>Risk Insight Engine</h2>
+  <p>Choose which condition you'd like to assess your risk for</p>
+</section>
+
+<section class="condition-selection">
+  <div class="condition-cards">
+    <div class="condition-card" onclick="selectCondition('pcos')">
+      <div class="condition-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 6v6l4 2"></path>
+        </svg>
+      </div>
+      <h3>PCOS Risk Assessment</h3>
+      <p>Polycystic Ovary Syndrome risk detection based on hormonal symptoms, metabolic factors, and clinical signs</p>
+      <div class="condition-features">
+        <span class="feature-tag">Hormonal</span>
+        <span class="feature-tag">Metabolic</span>
+        <span class="feature-tag">Clinical</span>
+      </div>
+      <button class="condition-btn primary">Assess PCOS Risk</button>
+    </div>
+
+    <div class="condition-card" onclick="selectCondition('endometriosis')">
+      <div class="condition-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+      </div>
+      <h3>Endometriosis Risk Assessment</h3>
+      <p>Endometriosis risk detection based on pain patterns, menstrual symptoms, and quality of life indicators</p>
+      <div class="condition-features">
+        <span class="feature-tag">Pain Assessment</span>
+        <span class="feature-tag">Symptoms</span>
+        <span class="feature-tag">Quality of Life</span>
+      </div>
+      <button class="condition-btn secondary">Assess Endometriosis Risk</button>
+    </div>
+  </div>
+</section>
+
+<style>
+.condition-selection {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.condition-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.condition-card {
+  background: var(--bg-panel);
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+
+.condition-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.condition-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(255, 79, 154, 0.3);
+  border-color: var(--accent);
+}
+
+.condition-card:hover::before {
+  transform: scaleX(1);
+}
+
+.condition-icon {
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.condition-card h3 {
+  color: var(--text-main);
+  font-size: 1.8em;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.condition-card p {
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 25px;
+  font-size: 1.1em;
+}
+
+.condition-features {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  background: rgba(255, 79, 154, 0.2);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  border: 1px solid rgba(255, 79, 154, 0.3);
+}
+
+.condition-btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.condition-btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #2b0018;
+}
+
+.condition-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 79, 154, 0.4);
+}
+
+.condition-btn.secondary {
+  background: rgba(255, 182, 193, 0.3);
+  color: var(--text-main);
+  border: 2px solid var(--accent);
+}
+
+.condition-btn.secondary:hover {
+  background: rgba(255, 79, 154, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 79, 154, 0.3);
+}
+
+@media (max-width: 768px) {
+  .condition-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .condition-card {
+    padding: 30px 20px;
+  }
+  
+  .condition-card h3 {
+    font-size: 1.5em;
+  }
+}
+</style>
+
+<script>
+function selectCondition(condition) {
+  if (condition === 'pcos') {
+    window.location.href = '/risk/pcos';
+  } else if (condition === 'endometriosis') {
+    window.location.href = '/risk/endometriosis';
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BQTEY528MG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-BQTEY528MG');
+  </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luna Console</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Luna</h1>
+        <p>Health Intelligence Console</p>
+      </div>
+      <nav class="menu">
+        <a class="{{ 'active' if active_page=='dashboard' else '' }}" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="{{ 'active' if active_page=='cycle' else '' }}" href="{{ url_for('cycle') }}">Cycle Timeline Setup</a>
+        <a class="{{ 'active' if active_page=='symptoms' else '' }}" href="{{ url_for('symptoms') }}">Daily Body Check</a>
+        <a class="{{ 'active' if active_page=='patterns' else '' }}" href="{{ url_for('patterns') }}">Pattern Intelligence</a>
+        <a class="{{ 'active' if active_page=='risk' else '' }}" href="{{ url_for('risk') }}">Risk Insight Engine (PCOD/Endometriosis)</a>
+        <a class="{{ 'active' if active_page=='history' else '' }}" href="{{ url_for('history') }}">Health History</a>
+      </nav>
+      <div class="sidebar-note">
+        <p>Welcome, {{ user_name }}.</p>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      {% if message %}
+        <section class="alert {{ message.type }}">{{ message.text }}</section>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

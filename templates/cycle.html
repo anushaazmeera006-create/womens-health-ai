@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+{% block head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+{% endblock %}
+{% block content %}
+<section class="hero-panel">
+  <h2>Cycle Timeline Setup</h2>
+  <p>Enter your last period date and period length, then continue to daily symptom check.</p>
+</section>
+
+<section class="split">
+  <article class="panel">
+    <h3>Cycle Intake Form</h3>
+    <form method="post" class="stack-form">
+      <label for="period_date">Last period date</label>
+      <input id="period_date" name="period_date" type="date" required>
+      <label for="period_length_days">How long was your period? (days)</label>
+      <input id="period_length_days" name="period_length_days" type="number" min="1" max="15" value="{{ data.period_length_days }}">
+      <button type="submit">Save And Go To Daily Body Check</button>
+    </form>
+  </article>
+  <article class="panel">
+    <h3>Prediction Summary</h3>
+    <p><strong>Average Cycle:</strong> {{ data.avg_cycle }} days</p>
+    <p><strong>Next Length:</strong> {{ data.predicted_length }} days</p>
+    <p><strong>Next Period:</strong> {{ data.next_period_label }} ({{ data.next_date }})</p>
+  </article>
+</section>
+
+<section class="panel">
+  <h3>Period Date Timeline</h3>
+  <div class="period-graph">
+    {% if data.logged_period_dates or data.manual_period_dates %}
+    <div class="graph-container">
+      <!-- Y-axis -->
+      <div class="y-axis">
+        <div class="y-label">Cycle Length (days)</div>
+        <div class="y-ticks">
+          <div class="y-tick" style="bottom: 0%">20</div>
+          <div class="y-tick" style="bottom: 25%">25</div>
+          <div class="y-tick" style="bottom: 50%">30</div>
+          <div class="y-tick" style="bottom: 75%">35</div>
+          <div class="y-tick" style="bottom: 100%">40</div>
+        </div>
+      </div>
+      
+      <!-- X-axis -->
+      <div class="x-axis">
+        <div class="x-ticks">
+          {% for date in data.period_dates %}
+          <div class="x-tick" style="left: {{ (loop.index0 / (data.period_dates|length - 1) * 100) if data.period_dates|length > 1 else 50 }}%">
+            {{ date }}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="x-label">Period Dates</div>
+      </div>
+      
+      <!-- Graph area -->
+      <div class="graph-area">
+        <!-- Grid lines -->
+        <div class="grid-lines">
+          <div class="grid-line horizontal" style="bottom: 0%"></div>
+          <div class="grid-line horizontal" style="bottom: 25%"></div>
+          <div class="grid-line horizontal" style="bottom: 50%"></div>
+          <div class="grid-line horizontal" style="bottom: 75%"></div>
+          <div class="grid-line horizontal" style="bottom: 100%"></div>
+        </div>
+        
+        <!-- Connecting lines -->
+        {% if data.period_dates|length > 1 %}
+        <svg class="chart-lines" viewBox="0 0 100 100" preserveAspectRatio="none" data-version="{{ data.period_dates|join('') }}">
+          {% set points = [] %}
+          {% for date in data.period_dates %}
+            {% if loop.index0 == 0 %}
+              <!-- First period date - use average cycle length (28 days) -->
+              {% set y_position = ((28 - 20) / 20 * 100) %}
+              {% set x_position = (loop.index0 / (data.period_dates|length - 1) * 100) if data.period_dates|length > 1 else 50 %}
+              {% set _ = points.append(x_position ~ ',' ~ (100 - y_position)|string) %}
+            {% elif loop.index0 <= data.cycle_lengths|length %}
+              {% set cycle_length = data.cycle_lengths[loop.index0 - 1] %}
+              {% set y_position = ((cycle_length - 20) / 20 * 100) if cycle_length >= 20 and cycle_length <= 40 else 50 %}
+              {% set x_position = (loop.index0 / (data.period_dates|length - 1) * 100) if data.period_dates|length > 1 else 50 %}
+              {% set _ = points.append(x_position ~ ',' ~ (100 - y_position)|string) %}
+            {% endif %}
+          {% endfor %}
+          <polyline
+            points="{{ points|join(' ') }}"
+            fill="none"
+            stroke="var(--accent)"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+        </svg>
+        {% endif %}
+        
+        <!-- Data points -->
+        {% for date in data.period_dates %}
+        {% if loop.index0 == 0 %}
+        <!-- First period date - use average cycle length (28 days) -->
+        {% set y_position = ((28 - 20) / 20 * 100) %}
+        <div class="data-point {% if date in data.logged_period_dates %}logged{% else %}manual{% endif %}" 
+             style="left: {{ (loop.index0 / (data.period_dates|length - 1) * 100) if data.period_dates|length > 1 else 50 }}%; 
+             bottom: {{ y_position }}%">
+          <div class="point"></div>
+          <div class="point-label">{{ date }}: 28 days (Start) {% if date in data.logged_period_dates %}(Logged){% else %}(Manual){% endif %}</div>
+        </div>
+        {% elif loop.index0 <= data.cycle_lengths|length %}
+        {% set cycle_length = data.cycle_lengths[loop.index0 - 1] %}
+        {% set y_position = ((cycle_length - 20) / 20 * 100) if cycle_length >= 20 and cycle_length <= 40 else 50 %}
+        <div class="data-point {% if date in data.logged_period_dates %}logged{% else %}manual{% endif %}" 
+             style="left: {{ (loop.index0 / (data.period_dates|length - 1) * 100) if data.period_dates|length > 1 else 50 }}%; 
+             bottom: {{ y_position }}%">
+          <div class="point"></div>
+          <div class="point-label">{{ date }}: {{ cycle_length }} days {% if date in data.logged_period_dates %}(Logged){% else %}(Manual){% endif %}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    <div class="graph-info">
+      <p><strong>Total Period Dates:</strong> {{ data.period_dates|length }}</p>
+      <p><strong>Logged from Daily Check:</strong> {{ data.logged_period_dates|length }}</p>
+      <p><strong>Manual Entry:</strong> {{ data.manual_period_dates|length }}</p>
+    </div>
+    {% else %}
+    <div class="no-data">
+      <p>No period dates logged yet. Add period dates to see your timeline.</p>
+      <a href="{{ url_for('symptoms') }}" class="btn">Log Period Now</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.period-graph {
+  margin-top: 20px;
+}
+
+.graph-container {
+  position: relative;
+  height: 320px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 25px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.y-axis {
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 40px;
+  width: 60px;
+}
+
+.y-label {
+  position: absolute;
+  top: 50%;
+  left: -45px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  transform: rotate(-90deg);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.y-ticks {
+  position: relative;
+  height: 100%;
+}
+
+.y-tick {
+  position: absolute;
+  left: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  transform: translateX(-100%);
+  padding-right: 5px;
+}
+
+.x-axis {
+  position: absolute;
+  left: 60px;
+  right: 20px;
+  bottom: 0;
+  height: 50px;
+}
+
+.x-label {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.x-ticks {
+  position: relative;
+  height: 30px;
+}
+
+.x-tick {
+  position: absolute;
+  bottom: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.graph-area {
+  position: absolute;
+  left: 60px;
+  right: 20px;
+  top: 20px;
+  bottom: 40px;
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.chart-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.grid-lines {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.grid-line.horizontal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+  opacity: 0.3;
+}
+
+.data-point {
+  position: absolute;
+  transform: translate(-50%, 50%);
+  z-index: 10;
+}
+
+.data-point .point {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.data-point.logged .point {
+  background: var(--accent);
+}
+
+.data-point.manual .point {
+  background: #ffa500;
+}
+
+.data-point:hover .point {
+  transform: scale(1.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.point-label {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: var(--text-main);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+}
+
+.point-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--line);
+}
+
+.data-point:hover .point-label {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+.graph-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  background: var(--bg-panel);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.graph-info p {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  background: var(--bg-panel);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.no-data p {
+  margin: 0 0 20px 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .graph-container {
+    height: 120px;
+    padding: 15px;
+  }
+  
+  .point-label {
+    font-size: 11px;
+  }
+  
+  .graph-info {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<section class="panel">
+  <h3>Saved Dates & Edit</h3>
+  <div class="date-grid">
+    {% for d in data.period_dates %}
+      <div class="date-chip-container">
+        <span class="date-chip">{{ d }}</span>
+        <button class="edit-date-btn" onclick="editDate('{{ d }}')">Edit</button>
+        <button class="delete-date-btn" onclick="deleteDate('{{ d }}')">Delete</button>
+      </div>
+    {% else %}
+      <p>No dates added.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Edit Date Modal -->
+<div id="editDateModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeEditModal()">&times;</span>
+    <h3>Edit Period Date</h3>
+    <form id="editDateForm" method="post" action="{{ url_for('edit_date') }}">
+      <input type="hidden" id="originalDate" name="original_date">
+      <label for="newDate">New Date:</label>
+      <input type="date" id="newDate" name="new_date" required>
+      <label for="newLength">Period Length (days):</label>
+      <input type="number" id="newLength" name="new_length" min="1" max="15" required>
+      <button type="submit">Update</button>
+    </form>
+  </div>
+</div>
+
+<style>
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: var(--bg-glass);
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 400px;
+  border: 1px solid var(--line);
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #fff;
+}
+
+.date-chip-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 5px;
+}
+
+.edit-date-btn, .delete-date-btn {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.edit-date-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.delete-date-btn {
+  background: #f44336;
+  color: white;
+}
+
+.edit-date-btn:hover, .delete-date-btn:hover {
+  opacity: 0.8;
+}
+</style>
+
+<script>
+function editDate(date) {
+  document.getElementById('originalDate').value = date;
+  document.getElementById('newDate').value = date;
+  document.getElementById('editDateModal').style.display = 'block';
+}
+
+function closeEditModal() {
+  document.getElementById('editDateModal').style.display = 'none';
+}
+
+function deleteDate(date) {
+  if (confirm('Are you sure you want to delete this period date?')) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("delete_date") }}';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'date';
+    input.value = date;
+    form.appendChild(input);
+    
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('editDateModal');
+  if (event.target == modal) {
+    modal.style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

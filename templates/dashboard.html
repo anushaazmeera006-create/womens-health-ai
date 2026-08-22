@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-panel">
+  <h2>Luna Health Intelligence System Console</h2>
+  <p>Select a module to continue your guided health workflow.</p>
+</section>
+
+<section class="metrics-grid">
+  <a class="glass-card module-card" href="{{ url_for('cycle') }}">
+    <h3>Cycle Timeline Setup</h3>
+    <p>Add your last period date and period duration to build cycle prediction.</p>
+  </a>
+  <a class="glass-card module-card" href="{{ url_for('symptoms') }}">
+    <h3>Daily Body Check</h3>
+    <p>Log your daily symptoms, mood, and cycle phase in one guided form.</p>
+  </a>
+  <a class="glass-card module-card" href="{{ url_for('risk') }}">
+    <h3>Risk Insight Engine</h3>
+    <p>Run screening for PCOS and Endometriosis based on your inputs.</p>
+  </a>
+  <a class="glass-card module-card" href="{{ url_for('patterns') }}">
+    <h3>Pattern Intelligence</h3>
+    <p>See your dominant symptom patterns from historical logs.</p>
+  </a>
+</section>
+
+<section class="split">
+  <article class="panel">
+    <h3>Live Metrics</h3>
+    <p><strong>Average cycle:</strong> {{ data.avg_cycle }} days</p>
+    <p><strong>Predicted length:</strong> {{ data.predicted_length }} days</p>
+    <p><strong>Next period:</strong> {{ data.next_period_label }} ({{ data.next_date }})</p>
+    <p><strong>Saved period length:</strong> {{ data.period_length_days }} days</p>
+  </article>
+
+  <article class="panel">
+    <h3>Latest Symptom Snapshot</h3>
+    {% if data.latest_log %}
+      <ul class="kv">
+        {% for key, value in data.latest_log.items() %}
+          <li><strong>{{ key }}</strong><span>{{ value }}</span></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No logs yet. Add one from Daily Body Check.</p>
+    {% endif %}
+  </article>
+</section>
+
+<!-- Health History Section -->
+<section class="history-section">
+  <div class="history-header">
+    <h3>Health History Overview</h3>
+    <p>Your complete health tracking journey at a glance</p>
+  </div>
+  
+  <div class="history-cards">
+    <div class="history-card summary-card">
+      <div class="card-icon">1</div>
+      <div class="card-content">
+        <h4>Total Days Logged</h4>
+        <p class="card-value">{{ history_summary.total_logs or 0 }}</p>
+        <small>Days tracked</small>
+      </div>
+    </div>
+    
+    <div class="history-card streak-card">
+      <div class="card-icon">2</div>
+      <div class="card-content">
+        <h4>Current Streak</h4>
+        <p class="card-value">{{ history_summary.current_streak or 0 }}</p>
+        <small>Consecutive days</small>
+      </div>
+    </div>
+    
+    <div class="history-card period-card">
+      <div class="card-icon">3</div>
+      <div class="card-content">
+        <h4>Period Days</h4>
+        <p class="card-value">{{ history_summary.period_days or 0 }}</p>
+        <small>Days with period</small>
+      </div>
+    </div>
+    
+    <div class="history-card pain-card">
+      <div class="card-icon">4</div>
+      <div class="card-content">
+        <h4>Avg Pain Level</h4>
+        <p class="card-value">{{ "%.1f"|format(history_summary.avg_pain_level or 0) }}</p>
+        <small>Out of 5</small>
+      </div>
+    </div>
+  </div>
+  
+  <div class="recent-logs-preview">
+    <h4>Recent Health Activity</h4>
+    {% if recent_logs %}
+      <div class="logs-timeline">
+        {% for log in recent_logs[:5] %}
+        <div class="timeline-item">
+          <div class="timeline-date">{{ log.selected_date.strftime('%b %d') }}</div>
+          <div class="timeline-content">
+            <div class="timeline-symptoms">
+              {% if log.symptoms_selected %}
+                {% if log.symptoms_selected is string %}
+                  {% set symptoms = log.symptoms_selected.split(',') %}
+                {% elif log.symptoms_selected is iterable %}
+                  {% set symptoms = log.symptoms_selected %}
+                {% else %}
+                  {% set symptoms = [] %}
+                {% endif %}
+                {% for symptom in symptoms[:2] %}
+                  <span class="symptom-tag">{{ symptom.strip() }}</span>
+                {% endfor %}
+              {% endif %}
+            </div>
+            <div class="timeline-meta">
+              <span class="mood {{ log.mood_state|lower }}">{{ log.mood_state }}</span>
+              {% if log.had_period == 'Yes' %}
+                <span class="period-indicator">Period</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="view-full-history">
+        <a href="{{ url_for('history') }}" class="secondary-btn">View Full History</a>
+      </div>
+    {% else %}
+      <div class="no-history">
+        <p>No health logs yet. Start tracking your daily symptoms to see your history here!</p>
+        <a href="{{ url_for('symptoms') }}" class="primary-btn">Start Logging</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% block extra_css %}
+<style>
+.history-section {
+  margin-top: 40px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-panel) 100%);
+  border-radius: 20px;
+  padding: 30px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.history-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.history-header h3 {
+  margin: 0 0 10px 0;
+  color: var(--text-main);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.history-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.history-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.history-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.history-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.streak-card {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 146, 60, 0.05));
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+.period-card {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05));
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+.pain-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+  color: white;
+}
+
+.summary-card .card-icon {
+  background: var(--ok);
+}
+
+.streak-card .card-icon {
+  background: #fb923c;
+}
+
+.period-card .card-icon {
+  background: #ec4899;
+}
+
+.pain-card .card-icon {
+  background: var(--bad);
+}
+
+.card-content h4 {
+  margin: 0 0 5px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.card-value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.recent-logs-preview {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.recent-logs-preview h4 {
+  margin: 0 0 20px 0;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.logs-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timeline-date {
+  flex: 0 0 80px;
+  font-weight: bold;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-symptoms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.symptom-tag {
+  background: var(--accent);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.timeline-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.mood {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.mood.happy { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
+.mood.anxious { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+.mood.irritated { background: rgba(239, 68, 68, 0.2); color: var(--bad); }
+.mood.calm { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+.period-indicator {
+  background: var(--accent);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.view-full-history {
+  text-align: center;
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.no-history {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.no-history p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.primary-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .history-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .timeline-item {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .timeline-date {
+    flex: none;
+  }
+}
+</style>
+{% endblock %}
+{% endblock %}

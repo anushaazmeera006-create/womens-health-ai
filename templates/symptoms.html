@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-panel">
+  <h2>Daily Body Check</h2>
+  <p>Track your symptoms and patterns for better health insights</p>
+</section>
+
+<section class="panel">
+  <div class="symptom-tracker">
+    <h3>How are you feeling today?</h3>
+    <form method="post" class="symptom-form">
+      <div class="form-section">
+        <h4>Date</h4>
+        <input type="date" name="selected_date" value="{{ request.args.get('selected_date', data.next_date) }}" class="form-input">
+      </div>
+
+      <div class="form-section">
+        <h4>Did you have your period today?</h4>
+        <div class="radio-group">
+          <label><input type="radio" name="had_period" value="Yes"> Yes</label>
+          <label><input type="radio" name="had_period" value="No" checked> No</label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>What symptoms are you experiencing?</h4>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="symptoms" value="Period Cramps"> Period Cramps</label>
+          <label><input type="checkbox" name="symptoms" value="Fatigue"> Fatigue</label>
+          <label><input type="checkbox" name="symptoms" value="Nausea"> Nausea</label>
+          <label><input type="checkbox" name="symptoms" value="Mood swings"> Mood swings</label>
+          <label><input type="checkbox" name="symptoms" value="Acne"> Acne</label>
+          <label><input type="checkbox" name="symptoms" value="Body pain"> Body pain</label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>How's your mood?</h4>
+        <select name="mood_state" class="form-select">
+          <option value="">Select mood...</option>
+          <option value="Happy">Happy</option>
+          <option value="Calm">Calm</option>
+          <option value="Anxious/Nervous">Anxious/Nervous</option>
+          <option value="Irritated">Irritated</option>
+          <option value="Sad">Sad</option>
+        </select>
+      </div>
+
+      <div class="form-section">
+        <h4>Other symptoms?</h4>
+        <input type="text" name="other_symptom" placeholder="Enter any other symptoms..." class="form-input">
+      </div>
+
+      <div class="form-section" id="flow-section">
+        <h4>Flow Intensity (if on period)</h4>
+        <div class="radio-group">
+          <label><input type="radio" name="flow_intensity" value="1"> Light</label>
+          <label><input type="radio" name="flow_intensity" value="2" checked> Normal</label>
+          <label><input type="radio" name="flow_intensity" value="3"> Heavy</label>
+          <label><input type="radio" name="flow_intensity" value="4"> Very Heavy</label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Pain Level</h4>
+        <div class="radio-group">
+          <label><input type="radio" name="pain_level" value="1"> No Pain</label>
+          <label><input type="radio" name="pain_level" value="2" checked> Mild</label>
+          <label><input type="radio" name="pain_level" value="3"> Moderate</label>
+          <label><input type="radio" name="pain_level" value="4"> Severe</label>
+        </div>
+      </div>
+
+      <div class="form-section" id="non-period-symptoms">
+        <h4>Non-Period Symptoms</h4>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="symptoms" value="Bloating"> Bloating</label>
+          <label><input type="checkbox" name="symptoms" value="Breast tenderness"> Breast tenderness</label>
+          <label><input type="checkbox" name="symptoms" value="Headaches"> Headaches</label>
+          <label><input type="checkbox" name="symptoms" value="Food cravings"> Food cravings</label>
+          <label><input type="checkbox" name="symptoms" value="Sleep changes"> Sleep changes</label>
+          <label><input type="checkbox" name="symptoms" value="Energy level changes"> Energy level changes</label>
+        </div>
+      </div>
+
+      
+      <div class="action-buttons">
+        <button type="submit" class="primary-btn">Log Symptoms</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+{% if data.latest_log %}
+<section class="panel">
+  <h3>Recent Log</h3>
+  <div class="recent-log">
+    <p><strong>Date:</strong> {{ data.latest_log.selected_date }}</p>
+    <p><strong>Period Status:</strong> {{ data.latest_log.had_period }}</p>
+    <p><strong>Cycle Phase:</strong> {{ data.latest_log.cycle_phase or 'Not detected' }}</p>
+    <p><strong>Symptoms:</strong> {{ data.latest_log.symptoms_selected|join(', ') if data.latest_log.symptoms_selected else 'None' }}</p>
+    <p><strong>Mood:</strong> {{ data.latest_log.mood_state or 'Not specified' }}</p>
+  </div>
+</section>
+{% endif %}
+
+<script>
+// Show/hide flow intensity section based on period status
+function updateFormFields() {
+    const hadPeriod = document.querySelector('input[name="had_period"]:checked');
+    const flowSection = document.getElementById('flow-section');
+    const nonPeriodSection = document.getElementById('non-period-symptoms');
+    
+    if (hadPeriod && hadPeriod.value === 'Yes') {
+        flowSection.style.display = 'block';
+        nonPeriodSection.style.display = 'none';
+    } else {
+        flowSection.style.display = 'none';
+        nonPeriodSection.style.display = 'block';
+    }
+}
+
+// Add event listeners to period radio buttons
+document.querySelectorAll('input[name="had_period"]').forEach(radio => {
+    radio.addEventListener('change', updateFormFields);
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', updateFormFields);
+</script>
+
+<style>
+.symptom-tracker {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.symptom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-section {
+  padding: 20px;
+  background: var(--bg-glass);
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.form-section h4 {
+  margin: 0 0 15px 0;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  color: var(--text-main);
+}
+
+.checkbox-group label:hover {
+  background: var(--bg-panel);
+  border-color: var(--accent);
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  color: var(--text-main);
+}
+
+.radio-group label:hover {
+  background: var(--bg-panel);
+  border-color: var(--accent);
+}
+
+.form-select, .form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: var(--bg-glass);
+  color: var(--text-main);
+}
+
+.form-select:focus, .form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 79, 154, 0.1);
+}
+
+.form-select option {
+  background: var(--bg-panel);
+  color: var(--text-main);
+}
+
+.recent-log {
+  background: var(--bg-glass);
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.recent-log p {
+  margin: 10px 0;
+  color: var(--text-main);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.primary-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #2b0018;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 79, 154, 0.3);
+}
+
+@media (max-width: 768px) {
+  .checkbox-group, .radio-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .checkbox-group label, .radio-group label {
+    justify-content: center;
+  }
+}
+</style>
+{% endblock %}

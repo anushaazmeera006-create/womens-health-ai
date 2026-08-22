@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luna Console</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .auth-layout {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg-main);
+      padding: 20px;
+    }
+    
+    .auth-content {
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .hero-panel {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .hero-panel h2 {
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+    
+    .hero-panel p {
+      color: var(--text-muted);
+      margin: 0;
+    }
+    
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .alert {
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .alert.success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--ok);
+      border: 1px solid var(--ok);
+    }
+    
+    .alert.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--bad);
+      border: 1px solid var(--bad);
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-layout">
+    <main class="auth-content">
+      {% if message %}
+        <section class="alert {{ message.type }}">{{ message.text }}</section>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luna Period Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <h1>Luna Period Tracker</h1>
+      <p>Cycle prediction, symptom logging, and health risk checks in one place.</p>
+    </header>
+
+    {% if message %}
+      <section class="alert {{ message.type }}">{{ message.text }}</section>
+    {% endif %}
+
+    <section class="grid metrics">
+      <article class="card">
+        <h2>Average Cycle</h2>
+        <p class="value">{{ data.avg_cycle }} days</p>
+      </article>
+      <article class="card">
+        <h2>Predicted Length</h2>
+        <p class="value">{{ data.predicted_length }} days</p>
+      </article>
+      <article class="card">
+        <h2>Next Period</h2>
+        <p class="value">{{ data.next_period_label }}</p>
+        <p class="subtle">{{ data.next_date }}</p>
+      </article>
+      <article class="card">
+        <h2>Symptom Logs</h2>
+        <p class="value">{{ data.logs_count }}</p>
+      </article>
+    </section>
+
+    <section class="grid two-col">
+      <article class="card">
+        <h2>Add Period Date</h2>
+        <form method="post" action="{{ url_for('add_period_date') }}">
+          <label for="period_date">Period start date</label>
+          <input id="period_date" name="period_date" type="date" required>
+          <button type="submit">Add Date</button>
+        </form>
+        <h3>Saved Dates</h3>
+        <ul class="date-list">
+          {% for d in data.period_dates %}
+            <li>{{ d }}</li>
+          {% else %}
+            <li>No dates added yet.</li>
+          {% endfor %}
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Log Symptoms</h2>
+        <form method="post" action="{{ url_for('log_symptoms') }}">
+          <div class="checks">
+            <label><input type="checkbox" name="cramps"> Cramps</label>
+            <label><input type="checkbox" name="fatigue"> Fatigue</label>
+            <label><input type="checkbox" name="nausea"> Nausea</label>
+            <label><input type="checkbox" name="mood_swings"> Mood Swings</label>
+            <label><input type="checkbox" name="acne"> Acne</label>
+            <label><input type="checkbox" name="back_pain"> Back Pain</label>
+          </div>
+
+          <label for="flow_intensity">Flow intensity (0-5)</label>
+          <input id="flow_intensity" type="range" name="flow_intensity" min="0" max="5" value="2">
+
+          <label for="pain_level">Pain level (0-5)</label>
+          <input id="pain_level" type="range" name="pain_level" min="0" max="5" value="2">
+
+          <button type="submit">Save Symptom Log</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="grid two-col">
+      <article class="card">
+        <h2>Health Risk Check</h2>
+        <form method="post" action="{{ url_for('health_risk') }}">
+          <div class="field-grid">
+            <div>
+              <label for="age">Age</label>
+              <input id="age" name="age" type="number" value="22" min="16" max="50">
+            </div>
+            <div>
+              <label for="cycle_length">Cycle length</label>
+              <input id="cycle_length" name="cycle_length" type="number" value="28" min="20" max="60">
+            </div>
+            <div>
+              <label for="weight_kg">Weight (kg)</label>
+              <input id="weight_kg" name="weight_kg" type="number" value="55" min="30" max="120" step="0.1">
+            </div>
+            <div>
+              <label for="height_cm">Height (cm)</label>
+              <input id="height_cm" name="height_cm" type="number" value="160" min="140" max="200" step="0.1">
+            </div>
+          </div>
+
+          <div class="checks">
+            <label><input type="checkbox" name="cycle_irregular"> Irregular cycles</label>
+            <label><input type="checkbox" name="weight_gain"> Weight gain</label>
+            <label><input type="checkbox" name="pimples"> Acne / pimples</label>
+            <label><input type="checkbox" name="pelvic_pain"> Pelvic pain</label>
+            <label><input type="checkbox" name="heavy_bleeding"> Heavy bleeding</label>
+          </div>
+
+          <button type="submit">Analyze Risk</button>
+        </form>
+
+        {% if health_result %}
+          <div class="result">
+            <h3>Results</h3>
+            <p>
+              <strong>PCOS:</strong>
+              {{ health_result.PCOS.probability }}% ({{ health_result.PCOS.risk_level }})
+            </p>
+            <p>
+              <strong>Endometriosis:</strong>
+              {{ health_result.Endometriosis.probability }}%
+              ({{ health_result.Endometriosis.risk_level }})
+            </p>
+          </div>
+        {% endif %}
+      </article>
+
+      <article class="card">
+        <h2>Symptom Pattern</h2>
+        <p>Need at least 3 symptom logs for cluster-based pattern analysis.</p>
+        <a class="button-link" href="{{ url_for('symptom_patterns') }}">Analyze Pattern</a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

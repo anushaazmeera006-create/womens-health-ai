@@ -1,0 +1,74 @@
+-- Copy and paste these commands into MySQL command line:
+
+CREATE DATABASE IF NOT EXISTS womens_health_ai;
+USE womens_health_ai;
+
+-- Users table for authentication
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100),
+    date_of_birth DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Symptom logs table for daily symptom tracking
+CREATE TABLE symptom_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    selected_date DATE NOT NULL,
+    had_period ENUM('Yes', 'No') DEFAULT 'No',
+    cycle_phase ENUM('Follicular', 'Ovulation', 'Luteal', 'Menstrual') DEFAULT 'Follicular',
+    symptoms_selected JSON,
+    other_symptom TEXT,
+    mood_state ENUM('Happy', 'Calm', 'Anxious/Nervous', 'Irritated', 'Sad'),
+    cramps BOOLEAN DEFAULT FALSE,
+    fatigue BOOLEAN DEFAULT FALSE,
+    nausea BOOLEAN DEFAULT FALSE,
+    mood_swings BOOLEAN DEFAULT FALSE,
+    acne BOOLEAN DEFAULT FALSE,
+    back_pain BOOLEAN DEFAULT FALSE,
+    flow_intensity INT DEFAULT 2,
+    pain_level INT DEFAULT 2,
+    cluster_result VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_date (user_id, selected_date)
+);
+
+-- Period dates table for cycle tracking
+CREATE TABLE period_dates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    period_date DATE NOT NULL,
+    period_length_days INT DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_period_date (user_id, period_date)
+);
+
+-- Assessment results table for risk assessments
+CREATE TABLE assessment_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    assessment_type ENUM('PCOS', 'Endometriosis') NOT NULL,
+    risk_percentage DECIMAL(5,2),
+    risk_level ENUM('Low', 'Medium', 'High'),
+    risk_factors JSON,
+    assessment_summary JSON,
+    recommendations JSON,
+    assessment_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Indexes for better performance
+CREATE INDEX idx_symptom_logs_user_date ON symptom_logs(user_id, selected_date);
+CREATE INDEX idx_period_dates_user_date ON period_dates(user_id, period_date);
+CREATE INDEX idx_assessment_results_user_type ON assessment_results(user_id, assessment_type);
+
+-- Show created tables
+SHOW TABLES;
